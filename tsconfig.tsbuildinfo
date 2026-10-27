@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/controlpanel.tsx","./src/components/plantcanvas.tsx","./src/components/telemetrypanel.tsx","./src/components/topbar.tsx","./src/data/species.ts","./src/store/usesimulationstore.ts","./src/types/simulation.ts"],"version":"5.6.3"}
