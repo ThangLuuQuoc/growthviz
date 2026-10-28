@@ -20,6 +20,7 @@ interface SimulationActions {
   setRunning: (isRunning: boolean) => void;
   setSpeed: (speed: SimulationSpeed) => void;
   stepDay: () => void;
+  scrubToProgress: (progress: number) => void;
   resetSimulation: () => void;
   applyOptimalEnvironment: () => void;
 
@@ -165,7 +166,7 @@ function createLog(day: number, type: LogType, title: string, message: string): 
   };
 }
 
-function buildInitialState(speciesId: PlantSpecies['id']): SimulationState {
+function buildInitialState(speciesId: PlantSpecies['id'], startAtSprout = true): SimulationState {
   const species = PLANT_SPECIES[speciesId];
   const opt = species.optimalEnvironment;
 
@@ -182,16 +183,19 @@ function buildInitialState(speciesId: PlantSpecies['id']): SimulationState {
   };
 
   const { factorScores, stress } = evaluateEnvironment(initialEnv, species);
+  const initProgress = startAtSprout ? 16 : 0;
+  const initDays = startAtSprout ? 38 : 0;
+  const resolved = resolveStage(initProgress, species);
 
   return {
     selectedSpeciesId: speciesId,
     isRunning: false,
     speed: 1,
-    ageDays: 0,
-    growthProgress: 0,
+    ageDays: initDays,
+    growthProgress: initProgress,
     health: 96,
-    currentStage: species.stages[0].name,
-    currentStageIndex: 0,
+    currentStage: resolved.stage,
+    currentStageIndex: resolved.index,
     environment: initialEnv,
     stress,
     factorScores,
@@ -201,25 +205,23 @@ function buildInitialState(speciesId: PlantSpecies['id']): SimulationState {
     harvestCount: 0,
     totalYieldKg: 0,
     currentCropCount: 0,
-    dailyGrowthRate: 0,
+    dailyGrowthRate: 1.15,
     randomSeed: Math.floor(Math.random() * 10000),
     logs: [
       createLog(
-        0,
-        'system',
-        `${species.name} Specimen Initialized`,
-        `Planted ${species.scientificName} seed in substrate (pH ${initialEnv.soilPh.toFixed(
-          1
-        )}, moisture ${initialEnv.soilMoisture}%). Press Play or +1 Day to begin growth simulation.`
+        initDays,
+        'milestone',
+        `${species.name} 3D Studio Specimen Ready`,
+        `Showing ${species.scientificName} at ${resolved.stage} stage. Drag the red timeline bar at the bottom or press Play to watch 3D time-lapse growth.`
       ),
     ],
     history: [
       {
-        day: 0,
+        day: initDays,
         health: 96,
-        growthProgress: 0,
+        growthProgress: initProgress,
         soilMoisture: initialEnv.soilMoisture,
-        dailyGrowthDelta: 0,
+        dailyGrowthDelta: 1.15,
       },
     ],
   };
@@ -246,7 +248,21 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
 
   resetSimulation: () => {
     const currentSpecies = get().selectedSpeciesId;
-    set(buildInitialState(currentSpecies));
+    set(buildInitialState(currentSpecies, false));
+  },
+
+  scrubToProgress: (progress) => {
+    const state = get();
+    const species = PLANT_SPECIES[state.selectedSpeciesId];
+    const clampedProgress = clamp(Number(progress.toFixed(1)), 0, 100);
+    const resolved = resolveStage(clampedProgress, species);
+    const estimatedDays = Math.round((clampedProgress / 100) * species.baseMaturityDays * 2.8);
+    set({
+      growthProgress: clampedProgress,
+      currentStage: resolved.stage,
+      currentStageIndex: resolved.index,
+      ageDays: estimatedDays,
+    });
   },
 
   applyOptimalEnvironment: () => {
