@@ -328,3 +328,18 @@ export function createSoilBumpTexture(): THREE.CanvasTexture {
   tex.repeat.set(4, 4);
   return tex;
 }
+
+// Backwards-compatible aliases to prevent stale Vite HMR import errors
+export const createLeafBumpTexture = () => createSpeciesLeafBumpTexture('apple_ovate');
+export const createLeafColorTexture = (
+  baseHex: string,
+  secondaryHex: string,
+  yellowing: number,
+  necrosis: number
+) => createSpeciesLeafColorTexture('apple', baseHex, secondaryHex, yellowing, necrosis, false);
+export const createPleatedLeafGeometry = (
+  length = 1.6,
+  width = 0.62,
+  arch = 0.35
+) => createSpeciesLeafGeometry('apple_ovate', length, width, arch, 0);
+
